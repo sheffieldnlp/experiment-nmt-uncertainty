@@ -1,5 +1,4 @@
 import argparse
-import numpy as np
 
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.gaussian_process import GaussianProcessRegressor
@@ -14,7 +13,8 @@ from scipy.stats import pearsonr
 from scipy.stats import spearmanr
 
 from utils import parse_args_with_help
-from utils import get_values_from_file
+from utils import read_feature_files
+from utils import read_labels_files
 
 
 def get_classifier(clf_name):
@@ -34,21 +34,6 @@ def get_classifier(clf_name):
         print('Error! Unknown classifier')
 
 
-def read_feature_files(fpaths, scale=False):
-    features = []
-    for fpath in fpaths:
-        values = get_values_from_file(fpath, delimiter=' ||| ')
-        values = np.asarray(values)
-        if scale:
-            values = preprocessing.scale(values)
-        features.append(values)
-    return np.stack(features, axis=-1)
-
-
-def read_labels_file(fpath):
-    return np.loadtxt(fpath)
-
-
 def correlation_fn(y_true, y_pred, measure='Pearson'):
     if measure == 'Pearson':
         return pearsonr(y_true, y_pred)[0]
@@ -56,6 +41,16 @@ def correlation_fn(y_true, y_pred, measure='Pearson'):
         return spearmanr(y_true, y_pred)[0]
     else:
         print('Error! Unknown measure')
+
+
+def cross_validation(features_files, labels_file, measure='Spearman', classifier='SVR', scale=False):
+    x_data = read_feature_files(args.feature_files, scale=args.scale)
+    y_data = read_labels_file(args.labels_file)
+    clf = get_classifier(args.classifier)()
+    scorer = make_scorer(correlation_fn, measure=args.measure)
+    scores = cross_val_score(clf, x_data, y_data, scoring=scorer, cv=5)
+    print(scores)
+    print('Correlation: %0.3f (+/- %0.2f)' % (scores.mean(), scores.std() * 2))
 
 
 def main():
@@ -66,14 +61,9 @@ def main():
     parser.add_argument('-c', '--classifier', required=False, default='SVR')
     parser.add_argument('-s', '--scale', action='store_true', required=False, default=False)
     args = parse_args_with_help(parser)
-    x_data = read_feature_files(args.feature_files, scale=args.scale)
-    y_data = read_labels_file(args.labels_file)
-    clf = get_classifier(args.classifier)()
-    scorer = make_scorer(correlation_fn, measure=args.measure)
-    scores = cross_val_score(clf, x_data, y_data, scoring=scorer, cv=5)
-    print(scores)
-    print('Correlation: %0.3f (+/- %0.2f)' % (scores.mean(), scores.std() * 2))
+    cross_validation(args.feature_files, args.labels_file, measure=args.measure, classifier=args.classifier, scale=args.scale)
 
 
 if __name__ == '__main__':
     main()
+
