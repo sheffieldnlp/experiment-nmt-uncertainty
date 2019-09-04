@@ -1,6 +1,8 @@
 import numpy as np
 import sys
 
+from sklearn import preprocessing
+
 
 def parse_args_with_help(parser):
     try:
@@ -32,4 +34,3 @@ def read_feature_files(fpaths, scale=False):
 
 def read_labels_file(fpath):
     return np.loadtxt(fpath)
-

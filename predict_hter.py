@@ -8,13 +8,12 @@ from sklearn.svm import LinearSVR
 from sklearn import linear_model
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import make_scorer
-from sklearn import preprocessing
 from scipy.stats import pearsonr
 from scipy.stats import spearmanr
 
 from utils import parse_args_with_help
 from utils import read_feature_files
-from utils import read_labels_files
+from utils import read_labels_file
 
 
 def get_classifier(clf_name):
@@ -43,11 +42,11 @@ def correlation_fn(y_true, y_pred, measure='Pearson'):
         print('Error! Unknown measure')
 
 
-def cross_validation(features_files, labels_file, measure='Spearman', classifier='SVR', scale=False):
-    x_data = read_feature_files(args.feature_files, scale=args.scale)
-    y_data = read_labels_file(args.labels_file)
-    clf = get_classifier(args.classifier)()
-    scorer = make_scorer(correlation_fn, measure=args.measure)
+def cross_validation(feature_files, labels_file, measure='Spearman', classifier='SVR', scale=False):
+    x_data = read_feature_files(feature_files, scale=scale)
+    y_data = read_labels_file(labels_file)
+    clf = get_classifier(classifier)()
+    scorer = make_scorer(correlation_fn, measure=measure)
     scores = cross_val_score(clf, x_data, y_data, scoring=scorer, cv=5)
     print(scores)
     print('Correlation: %0.3f (+/- %0.2f)' % (scores.mean(), scores.std() * 2))
